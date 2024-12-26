@@ -6,9 +6,8 @@
 #include <errno.h>
 
 #ifdef _MINOS
-#define SCALE 10
-#define WIDTH (16*SCALE)
-#define HEIGHT (9*SCALE)
+#define WIDTH 80
+#define HEIGHT 24
 #else
 #define WIDTH 80
 #define HEIGHT 24
@@ -68,6 +67,7 @@ void clearlineat(size_t y) {
     }
 }
 #ifdef _MINOS
+#include <minos/tty/tty.h>
 #else
 #include <termios.h>
 #include <unistd.h>
@@ -75,7 +75,11 @@ void clearlineat(size_t y) {
 #endif
 void disable_echo() {
 #ifdef _MINOS
-#error TODO: disable_echo on MinOS
+    ttyflags_t flags;
+    tty_get_flags(STDIN_FILENO, &flags);
+    flags &= ~(TTY_ECHO);
+    flags |= TTY_INSTANT;
+    tty_set_flags(STDIN_FILENO, flags);
 #else
     struct termios term;
     tcgetattr(fileno(stdin), &term);
@@ -85,7 +89,11 @@ void disable_echo() {
 }
 void enable_echo() {
 #ifdef _MINOS
-#error TODO: enable_echo on MinOS
+    ttyflags_t flags;
+    tty_get_flags(STDIN_FILENO, &flags);
+    flags |= TTY_ECHO;
+    flags &= ~TTY_INSTANT;
+    tty_set_flags(STDIN_FILENO, flags);
 #else
     struct termios term;
     tcgetattr(fileno(stdin), &term);
@@ -93,7 +101,6 @@ void enable_echo() {
     tcsetattr(fileno(stdin), 0, &term);
 #endif
 }
-
 
 enum {
     MODE_NORMAL,
@@ -111,7 +118,11 @@ const char* mode_to_str(uint32_t mode) {
     return mode_str_map[mode];
 }
 enum {
+#ifdef _MINOS
+    BACKSPACE='\b',
+#else
     BACKSPACE=127,
+#endif
     KEY_UP=256,
     KEY_DOWN,
     KEY_RIGHT,
@@ -139,7 +150,9 @@ int getch() {
     }
     return c;
 }
-#ifndef _MINOS
+#ifdef _MINOS
+ttyflags_t oldflags;
+#else
 struct termios oldtermios;
 void _cleanup_termios() {
     tcsetattr(fileno(stdin), TCSANOW, &oldtermios);
@@ -152,6 +165,7 @@ void _interrupt_handler_cleaner(int sig) {
 #endif
 void register_cleaners() {
 #ifdef _MINOS
+    tty_get_flags(STDIN_FILENO, &oldflags);
     // TODO: Some sort of cleaners for resetting the tty mode back
 #else
     tcgetattr(fileno(stdin), &oldtermios);
@@ -475,7 +489,12 @@ int main(int argc, const char** argv) {
                 // NOTE: I don't need to check boundaries. \0 would make it fail anyway
                 if(memcmp(editor.cmd, "q", editor.cmdlen) == 0) {
                     clear();
-                    return 1;
+                    #ifdef _MINOS
+                    // NOTE: Temporary solution for now.
+                    // At some point will just be atexit
+                    tty_set_flags(STDIN_FILENO, oldflags);
+                    #endif
+                    return 0;
                 } else if (memcmp(editor.cmd, "w", editor.cmdlen) == 0) {
                     ssize_t res = write_to_file(editor.path, editor.src.data, editor.src.len);
                     if(res < 0) {
