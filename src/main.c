@@ -119,10 +119,10 @@ const char* mode_to_str(uint32_t mode) {
 }
 enum {
     BACKSPACE=127,
-    KEY_LEFT=256,
-    KEY_UP,
+    KEY_UP=256,
     KEY_DOWN,
-    KEY_RIGHT
+    KEY_RIGHT,
+    KEY_LEFT,
 };
 int getch() {
     int c = getchar();
@@ -138,7 +138,7 @@ int getch() {
         case 'B':
         case 'C':
         case 'D':
-            return c-'A'+KEY_LEFT;
+            return c-'A'+KEY_UP;
         default:
             fprintf(stderr, "Unhandled escape sequence in getchar() (%c)\n", c);
             return -1;
@@ -419,6 +419,40 @@ int main(int argc, const char** argv) {
                 editor_add_line(&editor, editor.cursor_line, editor.cursor_chr);
                 editor.cursor_line++;
                 editor.cursor_chr=0;
+                break;
+            case KEY_UP:
+                if(editor.cursor_line > 0) {
+                    editor.cursor_line--;
+                    if(editor.cursor_chr > editor.lines.data[editor.cursor_line].size) 
+                        editor.cursor_chr = editor.lines.data[editor.cursor_line].size;
+                }
+                break;
+            case KEY_DOWN:
+                if(editor.cursor_line+1 < editor.lines.len) {
+                    editor.cursor_line++;
+                    if(editor.cursor_chr > editor.lines.data[editor.cursor_line].size) 
+                        editor.cursor_chr = editor.lines.data[editor.cursor_line].size;
+                }
+                break;
+            case KEY_RIGHT:
+                if(editor.cursor_chr >= editor.lines.data[editor.cursor_line].size) {
+                    if(editor.cursor_line+1 < editor.lines.len) {
+                        editor.cursor_chr = 0;
+                        editor.cursor_line++;
+                    }
+                } else {
+                    editor.cursor_chr++;
+                }
+                break;
+            case KEY_LEFT: 
+                if(editor.cursor_chr > 0) {
+                    editor.cursor_chr--;
+                } else {
+                    if(editor.cursor_line > 0) {
+                        editor.cursor_line--;
+                        editor.cursor_chr = editor.lines.data[editor.cursor_line].size;
+                    }
+                }
                 break;
             default:
                 editor_add_char(&editor, c, editor.cursor_line, editor.cursor_chr);
