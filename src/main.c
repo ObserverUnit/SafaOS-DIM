@@ -327,18 +327,15 @@ int main(int argc, const char** argv) {
     editor.lines.data[0].offset = 0;
     editor.lines.data[0].size   = 0;
     editor.lines.len++;
-    ssize_t e = read_from_file(editor.path, &editor.src.data, &editor.src.len);
+    ssize_t e = read_from_file(editor.path, &editor.src.data, &editor.src.cap);
+    editor.src.len = editor.src.cap;
     if(e < 0) {
         if(e != -ENOENT) {
             fprintf(stderr, "ERROR: Failed to load `%s`: %s", editor.path, strerror(e));
             return 1;
         }
     } else {
-        fprintf(stderr, "Gotten past here!\n");
-        fprintf(stderr, "editor.src.data=%p\n", editor.src.data);
-        fprintf(stderr, "editor.src.len=%zu\n", editor.src.len);
         parse_lines(&editor);
-        fprintf(stderr, "Past parsing lines?\n");
     }
     register_cleaners();
     clear();
