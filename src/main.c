@@ -272,7 +272,7 @@ ssize_t write_to_file(const char* path, char* bytes, size_t len) {
         size_t newly_written = fwrite(bytes, 1, len, f);
         if(newly_written == 0) {
             fclose(f);
-            return ferror(f);
+            return errno;
         }
         bytes += newly_written;
         len -= newly_written;
