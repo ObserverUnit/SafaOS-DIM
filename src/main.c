@@ -94,13 +94,6 @@ void enable_echo() {
 #endif
 }
 
-void sleep_milis(size_t milis) {
-#ifdef _MINOS
-#error TODO: sleep_milis on MinOS
-#else
-    usleep(milis*1000);
-#endif
-}
 
 enum {
     MODE_NORMAL,
