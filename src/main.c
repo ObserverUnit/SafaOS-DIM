@@ -274,12 +274,12 @@ void parse_lines(Editor* editor) {
 Editor editor={0};
 ssize_t write_to_file(const char* path, char* bytes, size_t len) {
     FILE* f = fopen(path, "wb");
-    if(!f) return errno;
+    if(!f) return -errno;
     while(len) {
         size_t newly_written = fwrite(bytes, 1, len, f);
         if(newly_written == 0) {
             fclose(f);
-            return errno;
+            return -errno;
         }
         bytes += newly_written;
         len -= newly_written;
@@ -499,7 +499,7 @@ int main(int argc, const char** argv) {
                     ssize_t res = write_to_file(editor.path, editor.src.data, editor.src.len);
                     if(res < 0) {
                         char buf[128];
-                        snprintf(buf, sizeof(buf), "Failed to write to `%s`: %s", editor.path, strerror(res));
+                        snprintf(buf, sizeof(buf), "Failed to write to `%s`: %s", editor.path, strerror(-res));
                         putstrat(buf, 0, h-1);
                         editor.cmdlen = 0;
                         editor.mode = MODE_NORMAL;
